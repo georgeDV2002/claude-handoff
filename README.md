@@ -51,6 +51,16 @@ later. [`examples/SESSION.md`](examples/SESSION.md) shows the full shape.
 Decisions, rejected approaches, and the reasoning behind both, recorded in the
 repository in the order they happened.
 
+## In practice
+
+I have run this at the end of most working sessions since the end of June, across
+about twenty repositories. The longest of those archives now holds 28 entries, one
+for each previous session on that project, each recording what was decided and what
+had already been ruled out.
+
+It has made a real difference to how much carries over from one session to the next,
+which is why I am publishing it rather than leaving it in my own setup.
+
 ## Install
 
 ```bash
