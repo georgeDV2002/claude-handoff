@@ -1,9 +1,10 @@
-# handoff
+# handoff + pickup
 
-A Claude Code skill that closes out a working session: it writes a `SESSION.md`
-the next session reads to resume, rotates the previous one into an archive, copies
-anything worth keeping out of `/tmp`, and commits — in each repository the session
-touched.
+Two Claude Code skills that work as a pair. `/handoff` closes out a working
+session: it writes a `SESSION.md` the next session reads to resume, rotates the
+previous one into an archive, copies anything worth keeping out of `/tmp`, and
+commits — in each repository the session touched. `/pickup` opens the next
+session: it loads that file, checks it against git, and waits for you.
 
 ## The problem
 
@@ -25,6 +26,13 @@ summary of the conversation. It is the state needed to keep going: what was
 completed, what was decided and on what grounds, what was tried and failed, the
 next concrete step, and the questions still open.
 
+Before anything is written as pending, it is checked. Every item from the previous
+handoff and from this session is compared against the conversation, the commits
+and the repository. Finished work moves to Completed. What remains is tagged
+`[open]`, `[if <condition>]` for things that only matter once something happens,
+or `[unsure]` with the one check that would settle it. An unsure item stays
+unsure rather than being rounded up to pending or down to done.
+
 It is deliberately short, because a handoff the next session cannot afford to read
 in full is not doing its job, and session history is kept in a separate file for
 that reason.
@@ -32,9 +40,11 @@ that reason.
 The file opens by addressing the next session directly, so resuming works whether
 or not that session has this skill installed:
 
-> **New session:** read only this file, then report to the operator (1) where we
-> left off, (2) pending decisions and open questions — and WAIT for confirmation
-> before acting.
+> **New session:** read this file whole and keep it in context — do not recite
+> it back. Only `[open]` items are pending; `[if …]` items are dormant and
+> `[unsure]` items must be shown as unsure, not as pending. Finished work is
+> never listed below as pending. Check git for commits newer than `Updated:`,
+> then WAIT for the operator before acting.
 
 ### 2. The repository keeps a record of its own decisions
 
@@ -51,6 +61,20 @@ later. [`examples/SESSION.md`](examples/SESSION.md) shows the full shape.
 Decisions, rejected approaches, and the reasoning behind both, recorded in the
 repository in the order they happened.
 
+### 3. The next session starts loaded, not lectured
+
+`/pickup` is the other half. It reads `SESSION.md` in full, checks it against
+git (commits made after the handoff, a different branch, uncommitted work), and
+re-checks every pending item, since something may have been finished after the
+handoff was written. It reads only the few files the next step names, and never
+opens the archive except to search it for a specific question.
+
+Then it prints one line — `Loaded <repo> @ <branch> — handoff from <date>` — and
+waits. Everything it read is in context, so you ask what you need ("what's
+pending?", "why did we drop the 10k batch?") instead of reading a report. Asked
+what is pending, it lists open items first, then unsure ones marked as unsure,
+and leaves finished work out.
+
 ## In practice
 
 I have run this at the end of most working sessions since the end of June, across
@@ -65,19 +89,21 @@ which is why I am publishing it rather than leaving it in my own setup.
 
 ```bash
 git clone https://github.com/georgeDV2002/claude-handoff
-mkdir -p ~/.claude/skills/handoff
+mkdir -p ~/.claude/skills/handoff ~/.claude/skills/pickup
 cp claude-handoff/claude-code/handoff/SKILL.md ~/.claude/skills/handoff/
+cp claude-handoff/claude-code/pickup/SKILL.md ~/.claude/skills/pickup/
 ```
 
 Run `/handoff` as a session winds down, rather than once the context window has
-already forced the issue.
+already forced the issue. Run `/pickup` as the first thing in the next one.
 
 ## What it writes
 
 **`SESSION.md`** — the current session only, in the repository root. Ten sections:
 Bigger Picture, Objective, Git State, Completed This Session, Decisions Made, Dead
 Ends — Do Not Retry, Rescued Artifacts, Context That Would Be Lost, Next Step, Open
-Questions.
+Questions. Next Step and Open Questions carry the `[open]` / `[if …]` / `[unsure]`
+tags, or say "Nothing outstanding" and "none" outright.
 
 **`SESSION_ARCHIVE.md`** — every previous handoff, newest first. It carries an
 explicit instruction not to load it at session start; it is there to be searched
@@ -103,7 +129,14 @@ its own.
   a path that still exists rather than one that will not survive a reboot.
 - **Git state is taken from git.** If a command did not print it, it does not go in
   the file.
-- **It commits and stops.** Pushing is left to the operator.
+- **Finished work is checked, not remembered.** A handoff that lists done work as
+  pending sends the next session back over it.
+- **Unsure is a state of its own**, with the check that would settle it.
+- **It commits and stops.** Pushing is left to the operator. Only the two handoff
+  files are committed, even when other work is already staged; a blocked commit
+  is reported as blocked.
+- **`/pickup` prints one line.** The handoff is for loading into context, not for
+  reading back to the person who lived through the session.
 
 ## License
 

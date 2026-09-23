@@ -1,7 +1,7 @@
 ---
 name: handoff
 description: Capture full session state to SESSION.md (latest session only), rescue useful /tmp artifacts to persistent storage, rotate the previous handoff into SESSION_ARCHIVE.md, and commit — in every repo touched. Use when closing, handing off, pausing, or preserving a coding or research session for a fresh context.
-allowed-tools: Read, Write, Edit, Bash(git status:*), Bash(git branch --show-current), Bash(git log:*), Bash(git stash list), Bash(git add SESSION.md SESSION_ARCHIVE.md), Bash(git commit:*), Bash(date:*), Bash(ls:*), Bash(du:*), Bash(find:*), Bash(mkdir -p:*), Bash(cp:*)
+allowed-tools: Read, Write, Edit, Grep, Bash(grep:*), Bash(git show:*), Bash(git status:*), Bash(git branch --show-current), Bash(git log:*), Bash(git stash list), Bash(git add SESSION.md SESSION_ARCHIVE.md), Bash(git commit:*), Bash(date:*), Bash(ls:*), Bash(du:*), Bash(find:*), Bash(mkdir -p:*), Bash(cp:*)
 ---
 
 You are closing this session. Before context is lost, capture everything the next session needs to continue without asking questions — especially the hard-earned knowledge that lives only in this conversation: mistakes made, assumptions confirmed or broken, approaches that worked and that failed. SESSION.md is what a fresh chat reads to resume with a SMALL context window; it must be self-sufficient on its own, without the archive.
@@ -24,12 +24,11 @@ Use that output as evidence. Do not invent ahead/behind counts, dirty files, sta
 
 ## Step 2 — Rescue ephemeral files (once per session)
 
-**`/tmp` does not survive a reboot** — and on WSL, not even a VM shutdown. Anything
-this session produced there — the scratchpad directory, ad-hoc scripts, extracted
-datasets, query output, generated reports, notes — is gone the moment the machine
-stops, and SESSION.md would then point at paths that no longer exist. Copy what
-still has value somewhere persistent BEFORE writing SESSION.md, so the file can
-reference the real, surviving location.
+**`/tmp` is wiped when WSL restarts.** Anything this session produced there — the
+scratchpad directory, ad-hoc scripts, extracted datasets, query output, generated
+reports, notes — is gone the moment the VM stops, and SESSION.md would then point
+at paths that no longer exist. Copy what still has value somewhere persistent
+BEFORE writing SESSION.md, so the file can reference the real, surviving location.
 
 ### 2a — Inventory
 
@@ -109,6 +108,32 @@ here only when a specific question needs history.
 
 If the previous handoff carries no `Updated:` value, write `date unknown` in the new FLASH heading rather than guessing a date.
 
+## Step 3½ — Check what is actually finished (per repo)
+
+Do this BEFORE writing SESSION.md. A handoff that lists finished work as pending
+sends the next session back over it, so **nothing goes under Next Step or Open
+Questions without being checked.**
+
+1. Collect every candidate: the previous handoff's Next Step and Open Questions
+   (you just rotated it — read them from the archive's new FLASH), plus anything
+   this session left undone, deferred or asked about.
+2. Check each one against evidence, cheapest first:
+   - this conversation — was it done, answered or decided here?
+   - `git log` since the previous handoff's `Updated:` — does a commit do it?
+   - the repo — one `ls`, `grep` or `git log -- <path>` that shows it done.
+3. Put it in exactly one place:
+   - **Done** → Completed This Session (if done now) or drop it (if done
+     earlier). Never under Next Step or Open Questions.
+   - **Still pending, and you are sure** → tag `[open]`.
+   - **Waiting on a condition that has not happened** ("only if a third app
+     needs it") → tag `[if <condition>]`. It is not pending work.
+   - **Cannot tell** — evidence is missing or contradicts itself → tag
+     `[unsure]` and say why and what one check would settle it. Never round an
+     unsure item up to open or down to done.
+
+If nothing is left, Next Step says `Nothing outstanding.` and Open Questions says
+`none` — explicitly, so the next session cannot mistake silence for an oversight.
+
 ## Step 4 — Write SESSION.md (per repo)
 
 Write `SESSION.md` in the repo root with the following structure. Be specific and terse. No filler sentences.
@@ -117,10 +142,12 @@ Write `SESSION.md` in the repo root with the following structure. Be specific an
 # Session Handoff
 Updated: <ISO datetime from date command>
 
-> **New session:** read only this file, then report to the operator (1) where
-> we left off, (2) pending decisions and open questions — and WAIT for
-> confirmation before acting. Session history lives in SESSION_ARCHIVE.md
-> (FLASH sections, newest first) — search it only when a question needs it.
+> **New session:** read this file whole and keep it in context — do not recite
+> it back. Only `[open]` items are pending; `[if …]` items are dormant and
+> `[unsure]` items must be shown as unsure, not as pending. Finished work is
+> never listed below as pending. Check git for commits newer than `Updated:`,
+> then WAIT for the operator before acting. History lives in
+> SESSION_ARCHIVE.md (FLASH sections, newest first) — search it, never read it.
 
 ## Bigger Picture
 <2–3 lines: the overarching goal this work serves, and where the project
@@ -161,12 +188,14 @@ Never reference a /tmp path as if it will still exist — it won't.>
 seen, assumptions confirmed, things tried interactively that aren't in git>
 
 ## Next Step
-<Single, concrete, immediately actionable instruction for the next session.
-Specific enough that no clarification is needed.>
+<[open] Single, concrete, immediately actionable instruction for the next
+session, checked in Step 3½ as not yet done. Or: "Nothing outstanding.">
 
 ## Open Questions
-- <unresolved item>
-- ...
+- [open] <unresolved item>
+- [if <condition>] <item that only matters once the condition arises>
+- [unsure] <item> — <why it is unclear; the one check that would settle it>
+<Or: "none". Only items that passed Step 3½; nothing finished appears here.>
 ```
 
 ## Step 5 — Commit (per repo)
@@ -189,7 +218,7 @@ If the commit cannot be created at all, keep the finished handoff files on disk 
 ## Step 6 — Confirm
 
 Print exactly one line per repo:
-"Handoff saved → <repo>/SESSION.md | Branch: <branch> | Committed <short sha> (<N unpushed>) | Next: <next step, max 10 words>"
+"Handoff saved → <repo>/SESSION.md | Branch: <branch> | Committed <short sha> (<N unpushed>) | Next: <next step, max 10 words, or "nothing outstanding">"
 
 If the commit failed, replace the `Committed …` segment with a truthful `Commit blocked: <reason>` segment rather than reporting a commit that does not exist.
 
@@ -198,4 +227,4 @@ Then one final line for the session:
 
 ## Note on resume
 
-The resume protocol is embedded in SESSION.md itself (the blockquote at the top), so any future session that reads the file follows it without ever having seen this skill: report where we left off and the pending decisions, then wait — and touch SESSION_ARCHIVE.md only when a specific question requires history.
+The resume protocol is embedded in SESSION.md itself (the blockquote at the top), so any future session that reads the file follows it without ever having seen this command: load the file without reciting it, treat only `[open]` items as pending and `[unsure]` ones as unsure, then wait — and touch SESSION_ARCHIVE.md only when a specific question requires history. `pickup` does the same with a git check and a reconcile of its own.

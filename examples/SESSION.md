@@ -1,10 +1,12 @@
 # Session Handoff
 Updated: 2026-03-14T22:41:09Z
 
-> **New session:** read only this file, then report to the operator (1) where
-> we left off, (2) pending decisions and open questions — and WAIT for
-> confirmation before acting. Session history lives in SESSION_ARCHIVE.md
-> (FLASH sections, newest first) — search it only when a question needs it.
+> **New session:** read this file whole and keep it in context — do not recite
+> it back. Only `[open]` items are pending; `[if …]` items are dormant and
+> `[unsure]` items must be shown as unsure, not as pending. Finished work is
+> never listed below as pending. Check git for commits newer than `Updated:`,
+> then WAIT for the operator before acting. History lives in
+> SESSION_ARCHIVE.md (FLASH sections, newest first) — search it, never read it.
 
 ## Bigger Picture
 Replacing the nightly CSV export with a streaming ingest so the dashboard stops
@@ -59,9 +61,14 @@ The CSV export rounds timestamps to the second; the stream doesn't. The
 comparison only matches once you truncate both sides.
 
 ## Next Step
-Run the backfill for 2026-03-01 to 2026-03-13 against staging, then compare with
-`compare.sql` one day at a time.
+[open] Run the backfill for 2026-03-01 to 2026-03-13 against staging, then
+compare with `compare.sql` one day at a time.
 
 ## Open Questions
-- Cut over during business hours or wait for the weekend window?
-- Keep the CSV export running in parallel for a week as a fallback, or cut clean?
+- [open] Cut over during business hours or wait for the weekend window?
+- [open] Keep the CSV export running in parallel for a week as a fallback, or
+  cut clean?
+- [if we scale past 6 consumers] Repartition the topic first (see Context).
+- [unsure] Whether the DLQ consumer is deployed to staging — its deploy was
+  started but never confirmed; `kubectl get deploy dlq-consumer -n staging`
+  settles it.
