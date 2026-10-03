@@ -1,7 +1,7 @@
 ---
 name: handoff
 description: Capture full session state to SESSION.md (latest session only), rescue useful /tmp artifacts to persistent storage, rotate the previous handoff into SESSION_ARCHIVE.md, and commit — in every repo touched. Use when closing, handing off, pausing, or preserving a coding or research session for a fresh context.
-allowed-tools: Read, Write, Edit, Grep, Bash(grep:*), Bash(git show:*), Bash(git status:*), Bash(git branch --show-current), Bash(git log:*), Bash(git stash list), Bash(git add SESSION.md SESSION_ARCHIVE.md), Bash(git commit:*), Bash(date:*), Bash(ls:*), Bash(du:*), Bash(find:*), Bash(mkdir -p:*), Bash(cp:*)
+allowed-tools: Read, Write, Edit, Grep, Bash(grep:*), Bash(git show:*), Bash(git status:*), Bash(git branch --show-current), Bash(git log:*), Bash(git stash list), Bash(git add SESSION.md SESSION_ARCHIVE.md), Bash(git commit:*), Bash(sort:*), Bash(tail:*), Bash(date:*), Bash(ls:*), Bash(du:*), Bash(find:*), Bash(mkdir -p:*), Bash(cp:*)
 ---
 
 You are closing this session. Before context is lost, capture everything the next session needs to continue without asking questions — especially the hard-earned knowledge that lives only in this conversation: mistakes made, assumptions confirmed or broken, approaches that worked and that failed. SESSION.md is what a fresh chat reads to resume with a SMALL context window; it must be self-sufficient on its own, without the archive.
@@ -119,11 +119,15 @@ Questions without being checked.**
    this session left undone, deferred or asked about.
 2. Check each one against evidence, cheapest first:
    - this conversation — was it done, answered or decided here?
-   - `git log` since the previous handoff's `Updated:` — does a commit do it?
+   - every commit since the previous handoff, oldest first, with dates:
+     `git log --since='<previous Updated>' --reverse --format='%h %ad %s' --date=iso`
+     — does one do it? (`git log -5` misses commits once more than five landed
+     and shows no dates to set against `Updated:`.)
    - the repo — one `ls`, `grep` or `git log -- <path>` that shows it done.
 3. Put it in exactly one place:
-   - **Done** → Completed This Session (if done now) or drop it (if done
-     earlier). Never under Next Step or Open Questions.
+   - **Done, dropped or superseded**, and it came from the previous handoff →
+     Closed Since Last Handoff, with the evidence. This session's own finished
+     work → Completed This Session. Never under Next Step or Open Questions.
    - **Still pending, and you are sure** → tag `[open]`.
    - **Waiting on a condition that has not happened** ("only if a third app
      needs it") → tag `[if <condition>]`. It is not pending work.
@@ -134,6 +138,31 @@ Questions without being checked.**
 If nothing is left, Next Step says `Nothing outstanding.` and Open Questions says
 `none` — explicitly, so the next session cannot mistake silence for an oversight.
 
+### Item IDs
+
+Every pending item carries an ID and the date it was first written down, so the
+next session can tell one item from another across handoffs, see how long it has
+waited, and match it to the commit that closes it:
+
+```
+- [open] T12 (since 2026-09-26) Ask the client about UK and Japan scope
+```
+
+- **Carried items keep their ID and since-date.** Reword the text if it needs
+  it; the ID is what ties the versions together.
+- **New items** take the next number, one above the highest ever used in this
+  repo — `grep -ohE 'T[0-9]+ \(since' SESSION.md SESSION_ARCHIVE.md 2>/dev/null | sort -uV | tail -1`
+  (none → T1). Never reuse a number. Since-date: today.
+- **Previous handoff had no IDs** (written by an older `/handoff`): assign them now.
+  For the since-date, grep one distinctive phrase of the item in the archive;
+  the oldest FLASH that has it gives the date. No hit → `since ≤<previous
+  Updated date>`.
+- **No ID disappears silently.** Every ID in the previous handoff ends up in
+  exactly one of Next Step, Open Questions or Closed Since Last Handoff. Count
+  them before writing.
+- Items born and finished within this session need no ID; they go under
+  Completed This Session.
+
 ## Step 4 — Write SESSION.md (per repo)
 
 Write `SESSION.md` in the repo root with the following structure. Be specific and terse. No filler sentences.
@@ -141,13 +170,15 @@ Write `SESSION.md` in the repo root with the following structure. Be specific an
 ```
 # Session Handoff
 Updated: <ISO datetime from date command>
+Previous handoff: <its Updated value, or "none">
 
 > **New session:** read this file whole and keep it in context — do not recite
 > it back. Only `[open]` items are pending; `[if …]` items are dormant and
-> `[unsure]` items must be shown as unsure, not as pending. Finished work is
-> never listed below as pending. Check git for commits newer than `Updated:`,
-> then WAIT for the operator before acting. History lives in
-> SESSION_ARCHIVE.md (FLASH sections, newest first) — search it, never read it.
+> `[unsure]` items must be shown as unsure, not as pending. Items keep their ID
+> (`T12`) across handoffs; one under Closed Since Last Handoff is finished.
+> Check `git log --since=<Updated>` for commits newer than this file, then WAIT
+> for the operator before acting. History lives in SESSION_ARCHIVE.md (FLASH
+> sections, newest first) — search it, never read it; nothing there is current.
 
 ## Bigger Picture
 <2–3 lines: the overarching goal this work serves, and where the project
@@ -187,14 +218,19 @@ Never reference a /tmp path as if it will still exist — it won't.>
 <Anything important that lives only in this conversation — error messages
 seen, assumptions confirmed, things tried interactively that aren't in git>
 
+## Closed Since Last Handoff
+- T<n> (since <date>) <item> — <done | answered | dropped | superseded>: <evidence: commit sha, this session, or the reason>
+<Every ID from the previous handoff that is not carried forward. Or: "none".>
+
 ## Next Step
-<[open] Single, concrete, immediately actionable instruction for the next
-session, checked in Step 3½ as not yet done. Or: "Nothing outstanding.">
+<[open] T<n> (since <date>) Single, concrete, immediately actionable
+instruction for the next session, checked in Step 3½ as not yet done. One item,
+not several. Or: "Nothing outstanding.">
 
 ## Open Questions
-- [open] <unresolved item>
-- [if <condition>] <item that only matters once the condition arises>
-- [unsure] <item> — <why it is unclear; the one check that would settle it>
+- [open] T<n> (since <date>) <unresolved item>
+- [if <condition>] T<n> (since <date>) <item that only matters once the condition arises>
+- [unsure] T<n> (since <date>) <item> — <why it is unclear; the one check that would settle it>
 <Or: "none". Only items that passed Step 3½; nothing finished appears here.>
 ```
 
@@ -227,4 +263,4 @@ Then one final line for the session:
 
 ## Note on resume
 
-The resume protocol is embedded in SESSION.md itself (the blockquote at the top), so any future session that reads the file follows it without ever having seen this command: load the file without reciting it, treat only `[open]` items as pending and `[unsure]` ones as unsure, then wait — and touch SESSION_ARCHIVE.md only when a specific question requires history. `pickup` does the same with a git check and a reconcile of its own.
+The resume protocol is embedded in SESSION.md itself (the blockquote at the top), so any future session that reads the file follows it without ever having seen this command: load the file without reciting it, treat only `[open]` items as pending and `[unsure]` ones as unsure, then wait — and touch SESSION_ARCHIVE.md only when a specific question requires history. `pickup` does the same with a git check and a reconcile of its own, matching items by ID.

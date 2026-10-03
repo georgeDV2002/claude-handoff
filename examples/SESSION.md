@@ -1,12 +1,14 @@
 # Session Handoff
 Updated: 2026-03-14T22:41:09Z
+Previous handoff: 2026-03-11T19:02:44Z
 
 > **New session:** read this file whole and keep it in context — do not recite
 > it back. Only `[open]` items are pending; `[if …]` items are dormant and
-> `[unsure]` items must be shown as unsure, not as pending. Finished work is
-> never listed below as pending. Check git for commits newer than `Updated:`,
-> then WAIT for the operator before acting. History lives in
-> SESSION_ARCHIVE.md (FLASH sections, newest first) — search it, never read it.
+> `[unsure]` items must be shown as unsure, not as pending. Items keep their ID
+> (`T12`) across handoffs; one under Closed Since Last Handoff is finished.
+> Check `git log --since=<Updated>` for commits newer than this file, then WAIT
+> for the operator before acting. History lives in SESSION_ARCHIVE.md (FLASH
+> sections, newest first) — search it, never read it; nothing there is current.
 
 ## Bigger Picture
 Replacing the nightly CSV export with a streaming ingest so the dashboard stops
@@ -60,15 +62,25 @@ scale past 6 without repartitioning first.
 The CSV export rounds timestamps to the second; the stream doesn't. The
 comparison only matches once you truncate both sides.
 
+## Closed Since Last Handoff
+- T2 (since 2026-03-09) Rows that fail validation crash the consumer — done:
+  dead-letter topic, 4e77d30
+- T4 (since 2026-03-11) Prove one full day matches the CSV export — done this
+  session: 2026-03-12, 1,284,301 rows both sides
+- T5 (since 2026-03-11) Try Kafka transactions for exactly-once — dropped: the
+  sink isn't transactional (see Dead Ends)
+
 ## Next Step
-[open] Run the backfill for 2026-03-01 to 2026-03-13 against staging, then
-compare with `compare.sql` one day at a time.
+[open] T8 (since 2026-03-14) Run the backfill for 2026-03-01 to 2026-03-13
+against staging, then compare with `compare.sql` one day at a time.
 
 ## Open Questions
-- [open] Cut over during business hours or wait for the weekend window?
-- [open] Keep the CSV export running in parallel for a week as a fallback, or
-  cut clean?
-- [if we scale past 6 consumers] Repartition the topic first (see Context).
-- [unsure] Whether the DLQ consumer is deployed to staging — its deploy was
-  started but never confirmed; `kubectl get deploy dlq-consumer -n staging`
-  settles it.
+- [open] T3 (since 2026-03-09) Cut over during business hours or wait for the
+  weekend window?
+- [open] T6 (since 2026-03-11) Keep the CSV export running in parallel for a
+  week as a fallback, or cut clean?
+- [if we scale past 6 consumers] T7 (since 2026-03-14) Repartition the topic
+  first (see Context).
+- [unsure] T9 (since 2026-03-14) Whether the DLQ consumer is deployed to
+  staging — its deploy was started but never confirmed; `kubectl get deploy
+  dlq-consumer -n staging` settles it.

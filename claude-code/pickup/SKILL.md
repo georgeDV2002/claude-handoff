@@ -53,7 +53,7 @@ As you read, hold four things apart — they have different shelf lives:
 |---|---|---|
 | Bigger Picture, Objective | the goal — why any of this matters | stable |
 | Decisions Made, Dead Ends, Context That Would Be Lost | **hard-earned knowledge** — unrecoverable, not in git | permanent |
-| Next Step, Open Questions | what was pending **when it was written** | **reconcile — may be closed** |
+| Next Step, Open Questions, Closed Since Last Handoff | what was pending, and what closed, **when it was written** | **reconcile — may have closed since** |
 | Git State, Completed This Session | claims about the world | **verify — may be stale** |
 
 The second row is the whole reason the file exists. Anything else in the handoff
@@ -74,15 +74,24 @@ another tool, the operator's own hands.
 ```
 git branch --show-current
 git status -sb
-git log --oneline -8
+git log --since='<Updated>' --reverse --format='%h %ad %s' --date=iso
 git stash list
 ```
+
+The `--since` log is every commit after the handoff, oldest first: read it as
+what happened next, in order. The first is usually the handoff's own commit
+(`Session handoff: …`), not new work. Git converts the `Z` in `Updated:`
+itself; do not compare times by eye. Empty means nothing landed since. No
+`Updated:` → `git log -15 --format='%h %ad %s' --date=iso` instead. Never `git log --oneline -N` here:
+it has no dates and stops at N, and a handoff can be followed by twenty commits
+from sessions that wrote none.
 
 Compare against the handoff's **Git State**:
 
 - **Commits newer than `Updated:`** — work no handoff recorded. Run
   `git show --stat --format='%h %s%n%b' <sha>` on each (message and filenames,
-  not the diff). Their messages are your best record of what happened since.
+  not the diff); over ~15 commits, only on those whose subject touches a
+  pending item. Their messages are your best record of what happened since.
 - **Branch differs** — you may be looking at the wrong line of work entirely.
 - **Dirty files the handoff didn't list, or listed and are now clean** — someone
   worked after the handoff, or the handoff was written before a final save.
@@ -102,17 +111,22 @@ specific file in Step 4 if the work needs it.
 
 A handoff's Next Step and Open Questions are a snapshot. **Never carry one forward
 as pending without checking it**, because a closed item presented as open sends
-the operator back over work already done. Handoffs from the current `/handoff` tag
-each item `[open]`, `[if <condition>]` or `[unsure]`; older ones may not. Either
-way, re-check every item, since commits may have landed after it was written.
+the operator back over work already done. Handoffs from the current `/handoff`
+give each item an ID and the date it was first recorded (`[open] T12 (since
+2026-09-26)`), tag it `[open]`, `[if <condition>]` or `[unsure]`, and list what
+closed under Closed Since Last Handoff; older ones may have only the tags, or
+neither. Either way, re-check every item, since commits may have landed
+after it was written. Track items by ID where there is one, never by wording.
 
 Each item ends up as exactly one of:
 
 - **Closed** if any of these holds:
-  - the handoff itself settles it elsewhere — Completed, Decisions Made, or a
-    Next Step that says "nothing outstanding";
-  - a commit newer than `Updated:` does it or decides it (subject, body or the
-    files it touched — Step 2 already has them);
+  - the handoff itself settles it elsewhere — its ID under Closed Since Last
+    Handoff, Completed, Decisions Made, or a Next Step that says "nothing
+    outstanding";
+  - a commit newer than `Updated:` names its ID ("closes T12"), or does or
+    decides it (subject, body or the files it touched — Step 2 already has
+    them);
   - the repo shows it done: the file exists, the function is renamed, the
     setting is in place (one cheap check from Step 4's list, not an
     investigation).
@@ -125,9 +139,10 @@ Each item ends up as exactly one of:
   down to closed.
 
 Hold this picture in mind; do not print it. When the operator asks what is
-pending, list the open items, then the unsure ones labelled as unsure. Leave
-closed items out, and mention dormant ones only if asked. When the handoff and
-the evidence disagree, the evidence wins.
+pending, list the open items, then the unsure ones labelled as unsure, each with
+its ID, and say how long it has waited when that is more than about two weeks.
+Leave closed items out, and mention dormant ones only if asked. When the handoff
+and the evidence disagree, the evidence wins.
 
 ## Step 4 — Enrich, narrowly
 
@@ -183,9 +198,15 @@ guessing.
 question needs history:
 
 ```
-grep -n -i '<term>' SESSION_ARCHIVE.md | head -20
+grep -n -i -E '^## FLASH|<term>' SESSION_ARCHIVE.md | head -60
 sed -n '<hit-40>,<hit+40>p' SESSION_ARCHIVE.md
 ```
+
+The FLASH headings in that output date every hit: a hit belongs to the heading
+above it. **Everything in the archive is history** — an `[open]` there was open
+on that FLASH's date, not now. An item's current status comes from SESSION.md
+and the commits since; for an ID that SESSION.md no longer mentions, `grep -n
+'T12 (since' SESSION_ARCHIVE.md` and take the first hit (newest FLASH).
 
 Grep for the thing, read the window around the hit, stop. Go to the archive when
 — and only when — you need to know *why* something was decided, whether an
@@ -222,7 +243,7 @@ this session so the next one is not cold too.
 | Tier | What | When | Rough cost |
 |---|---|---|---|
 | 0 | `SESSION.md` in full | always | 1.5–5k |
-| 0 | four git commands | always | <500 |
+| 0 | four git commands (the log from `Updated:` on) | always | <1k |
 | 1 | artifact `MANIFEST.md` | if artifacts exist | ~200 |
 | 1 | `git diff` of uncommitted work | if under ~150 lines | 0–2k |
 | 1 | `git show --stat` per unrecorded commit | on drift | ~150 each |

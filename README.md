@@ -33,6 +33,14 @@ and the repository. Finished work moves to Completed. What remains is tagged
 or `[unsure]` with the one check that would settle it. An unsure item stays
 unsure rather than being rounded up to pending or down to done.
 
+Each pending item also carries an ID and the date it was first written down —
+`[open] T12 (since 2026-02-26)` — and keeps both from one handoff to the next.
+Every item the previous handoff listed ends up either still pending or under
+Closed Since Last Handoff, with what closed it: a commit, a decision, or a reason
+it was dropped. Nothing leaves the list without a line saying why, so the next
+session can tell an item that has waited three weeks from one raised yesterday,
+and one that was finished from one that was forgotten.
+
 It is deliberately short, because a handoff the next session cannot afford to read
 in full is not doing its job, and session history is kept in a separate file for
 that reason.
@@ -42,9 +50,10 @@ or not that session has this skill installed:
 
 > **New session:** read this file whole and keep it in context — do not recite
 > it back. Only `[open]` items are pending; `[if …]` items are dormant and
-> `[unsure]` items must be shown as unsure, not as pending. Finished work is
-> never listed below as pending. Check git for commits newer than `Updated:`,
-> then WAIT for the operator before acting.
+> `[unsure]` items must be shown as unsure, not as pending. Items keep their ID
+> (`T12`) across handoffs; one under Closed Since Last Handoff is finished.
+> Check `git log --since=<Updated>` for commits newer than this file, then WAIT
+> for the operator before acting.
 
 ### 2. The repository keeps a record of its own decisions
 
@@ -64,16 +73,19 @@ repository in the order they happened.
 ### 3. The next session starts loaded, not lectured
 
 `/pickup` is the other half. It reads `SESSION.md` in full, checks it against
-git (commits made after the handoff, a different branch, uncommitted work), and
-re-checks every pending item, since something may have been finished after the
-handoff was written. It reads only the few files the next step names, and never
-opens the archive except to search it for a specific question.
+git (every commit made after the handoff, in order and dated, a different branch,
+uncommitted work), and re-checks every pending item by its ID, since something may
+have been finished after the handoff was written. It reads only the few files the
+next step names, and never opens the archive except to search it for a specific
+question.
 
 Then it prints one line — `Loaded <repo> @ <branch> — handoff from <date>` — and
 waits. Everything it read is in context, so you ask what you need ("what's
 pending?", "why did we drop the 10k batch?") instead of reading a report. Asked
 what is pending, it lists open items first, then unsure ones marked as unsure,
-and leaves finished work out.
+each with its ID and, if it has waited a while, its age, and leaves finished work
+out. Anything it finds in the archive is read as history, dated by the entry it
+came from, never as current status.
 
 ## In practice
 
@@ -99,11 +111,12 @@ already forced the issue. Run `/pickup` as the first thing in the next one.
 
 ## What it writes
 
-**`SESSION.md`** — the current session only, in the repository root. Ten sections:
-Bigger Picture, Objective, Git State, Completed This Session, Decisions Made, Dead
-Ends — Do Not Retry, Rescued Artifacts, Context That Would Be Lost, Next Step, Open
-Questions. Next Step and Open Questions carry the `[open]` / `[if …]` / `[unsure]`
-tags, or say "Nothing outstanding" and "none" outright.
+**`SESSION.md`** — the current session only, in the repository root. Eleven
+sections: Bigger Picture, Objective, Git State, Completed This Session, Decisions
+Made, Dead Ends — Do Not Retry, Rescued Artifacts, Context That Would Be Lost,
+Closed Since Last Handoff, Next Step, Open Questions. Pending items carry the
+`[open]` / `[if …]` / `[unsure]` tags, an ID and a since-date, or the sections say
+"Nothing outstanding" and "none" outright.
 
 **`SESSION_ARCHIVE.md`** — every previous handoff, newest first. It carries an
 explicit instruction not to load it at session start; it is there to be searched
@@ -132,6 +145,9 @@ its own.
 - **Finished work is checked, not remembered.** A handoff that lists done work as
   pending sends the next session back over it.
 - **Unsure is a state of its own**, with the check that would settle it.
+- **Items keep their ID across sessions, and closing one is written down.** A
+  list rewritten from scratch each time cannot show how long something has
+  waited, or tell finished from forgotten.
 - **It commits and stops.** Pushing is left to the operator. Only the two handoff
   files are committed, even when other work is already staged; a blocked commit
   is reported as blocked.
