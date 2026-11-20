@@ -114,6 +114,14 @@ Do this BEFORE writing SESSION.md. A handoff that lists finished work as pending
 sends the next session back over it, so **nothing goes under Next Step or Open
 Questions without being checked.**
 
+0. **First ask: is this session stopping in the middle of something?** A process
+   that started and has not finished — a sequence of steps half walked, a list
+   half worked through, a job still running, a file half edited — is the most
+   fragile thing in the handoff, because its position lives only in this
+   conversation. If yes, it goes under **In Progress** (Step 4) with an ID, and
+   Next Step becomes resuming it from where it stopped — never an older tracked
+   item in its place, and never the last step of its plan. If the session
+   finished what it was doing, In Progress says `none`.
 1. Collect every candidate: the previous handoff's Next Step and Open Questions
    (you just rotated it — read them from the archive's new FLASH), plus anything
    this session left undone, deferred or asked about.
@@ -128,7 +136,14 @@ Questions without being checked.**
    - **Done, dropped or superseded**, and it came from the previous handoff →
      Closed Since Last Handoff, with the evidence. This session's own finished
      work → Completed This Session. Never under Next Step or Open Questions.
-   - **Still pending, and you are sure** → tag `[open]`.
+   - **Started and not finished** → In Progress, as above. An In Progress entry
+     from the previous handoff that this session finished goes to Closed; one
+     still unfinished is carried, its Done / Stopped at / Running lines updated.
+   - **Still pending, and you are sure** → tag `[open]`. It goes under Open
+     Questions if it belongs to the work in hand, under **Backlog** if it is
+     parked. A carried item stays where the previous handoff put it; it moves
+     only when the operator or this session's work moves it — never because of
+     its age, and never to make it decided again.
    - **Waiting on a condition that has not happened** ("only if a third app
      needs it") → tag `[if <condition>]`. It is not pending work.
    - **Cannot tell** — evidence is missing or contradicts itself → tag
@@ -158,8 +173,11 @@ waited, and match it to the commit that closes it:
   the oldest FLASH that has it gives the date. No hit → `since ≤<previous
   Updated date>`.
 - **No ID disappears silently.** Every ID in the previous handoff ends up in
-  exactly one of Next Step, Open Questions or Closed Since Last Handoff. Count
-  them before writing.
+  exactly one of In Progress, Next Step, Open Questions, Backlog or Closed Since
+  Last Handoff — except that the In Progress ID is also the one Next Step
+  resumes. Count them before writing.
+- **Work started this session and not finished gets an ID** (it goes under In
+  Progress).
 - Items born and finished within this session need no ID; they go under
   Completed This Session.
 
@@ -176,6 +194,9 @@ Previous handoff: <its Updated value, or "none">
 > it back. Only `[open]` items are pending; `[if …]` items are dormant and
 > `[unsure]` items must be shown as unsure, not as pending. Items keep their ID
 > (`T12`) across handoffs; one under Closed Since Last Handoff is finished.
+> If In Progress is filled, the session stopped mid-process: resume from its
+> "Stopped at" line, after checking anything listed as Running. Backlog items
+> are open but parked — give them as a count unless asked.
 > Check `git log --since=<Updated>` for commits newer than this file, then WAIT
 > for the operator before acting. History lives in SESSION_ARCHIVE.md (FLASH
 > sections, newest first) — search it, never read it; nothing there is current.
@@ -222,16 +243,34 @@ seen, assumptions confirmed, things tried interactively that aren't in git>
 - T<n> (since <date>) <item> — <done | answered | dropped | superseded>: <evidence: commit sha, this session, or the reason>
 <Every ID from the previous handoff that is not carried forward. Or: "none".>
 
+## In Progress
+<Only if the session stopped in the middle of a process; otherwise "none". One
+entry per unfinished process, usually one:>
+T<n> (since <date>) <the process, in one line>
+- Done: <steps finished, with commits or files that show it>
+- Stopped at: <the exact position — which step, which item of which list, which
+  file and how far — precise enough to continue without asking>
+- Running: <background jobs, remote runs, watchers: host, job id, log path, how to
+  check it — or "nothing">
+- Then, in order: <the remaining steps of the plan, IDs where they have them>
+
 ## Next Step
 <[open] T<n> (since <date>) Single, concrete, immediately actionable
 instruction for the next session, checked in Step 3½ as not yet done. One item,
-not several. Or: "Nothing outstanding.">
+not several. If In Progress is filled, this is resuming it: "Resume T<n> from
+Stopped at". Or: "Nothing outstanding.">
 
 ## Open Questions
 - [open] T<n> (since <date>) <unresolved item>
 - [if <condition>] T<n> (since <date>) <item that only matters once the condition arises>
 - [unsure] T<n> (since <date>) <item> — <why it is unclear; the one check that would settle it>
-<Or: "none". Only items that passed Step 3½; nothing finished appears here.>
+<Or: "none". Only items that passed Step 3½; nothing finished appears here.
+Only what belongs to the work in hand; parked items go under Backlog.>
+
+## Backlog
+- [open] T<n> (since <date>) <item still open but parked — not part of the work in hand>
+<Or: "none". Same tags and checks as Open Questions. Pickup reports these as a
+count unless the operator asks.>
 ```
 
 ## Step 5 — Commit (per repo)
@@ -254,7 +293,7 @@ If the commit cannot be created at all, keep the finished handoff files on disk 
 ## Step 6 — Confirm
 
 Print exactly one line per repo:
-"Handoff saved → <repo>/SESSION.md | Branch: <branch> | Committed <short sha> (<N unpushed>) | Next: <next step, max 10 words, or "nothing outstanding">"
+"Handoff saved → <repo>/SESSION.md | Branch: <branch> | Committed <short sha> (<N unpushed>) | Next: <next step, max 10 words, or "nothing outstanding"; if In Progress is filled, "resume T<n> at <where it stopped>">"
 
 If the commit failed, replace the `Committed …` segment with a truthful `Commit blocked: <reason>` segment rather than reporting a commit that does not exist.
 
@@ -263,4 +302,4 @@ Then one final line for the session:
 
 ## Note on resume
 
-The resume protocol is embedded in SESSION.md itself (the blockquote at the top), so any future session that reads the file follows it without ever having seen this command: load the file without reciting it, treat only `[open]` items as pending and `[unsure]` ones as unsure, then wait — and touch SESSION_ARCHIVE.md only when a specific question requires history. `pickup` does the same with a git check and a reconcile of its own, matching items by ID.
+The resume protocol is embedded in SESSION.md itself (the blockquote at the top), so any future session that reads the file follows it without ever having seen this command: load the file without reciting it, resume an In Progress entry from where it stopped, treat only `[open]` items as pending and `[unsure]` ones as unsure, then wait — and touch SESSION_ARCHIVE.md only when a specific question requires history. `pickup` does the same with a git check and a reconcile of its own, matching items by ID.

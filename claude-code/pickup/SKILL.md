@@ -53,7 +53,8 @@ As you read, hold four things apart — they have different shelf lives:
 |---|---|---|
 | Bigger Picture, Objective | the goal — why any of this matters | stable |
 | Decisions Made, Dead Ends, Context That Would Be Lost | **hard-earned knowledge** — unrecoverable, not in git | permanent |
-| Next Step, Open Questions, Closed Since Last Handoff | what was pending, and what closed, **when it was written** | **reconcile — may have closed since** |
+| In Progress | **where an unfinished process stopped** — the position, what was running, the steps left | **reconcile — a Running job may have finished since** |
+| Next Step, Open Questions, Backlog, Closed Since Last Handoff | what was pending, and what closed, **when it was written** | **reconcile — may have closed since** |
 | Git State, Completed This Session | claims about the world | **verify — may be stale** |
 
 The second row is the whole reason the file exists. Anything else in the handoff
@@ -118,6 +119,15 @@ closed under Closed Since Last Handoff; older ones may have only the tags, or
 neither. Either way, re-check every item, since commits may have landed
 after it was written. Track items by ID where there is one, never by wording.
 
+**In Progress comes first.** If the handoff fills it, the last session stopped
+mid-process, and its Stopped at line is where work resumes — not the oldest open
+item, and not the last step of its plan. Reconcile it like any item: a commit
+since `Updated:` may have moved the position on, and a job under Running may have
+finished or died (note it; check it when the operator asks to resume, not now).
+A handoff without an In Progress section predates it: if its Completed or
+Context lines describe work left partway, treat that as in progress and say it is
+inferred.
+
 Each item ends up as exactly one of:
 
 - **Closed** if any of these holds:
@@ -139,15 +149,20 @@ Each item ends up as exactly one of:
   down to closed.
 
 Hold this picture in mind; do not print it. When the operator asks what is
-pending, list the open items, then the unsure ones labelled as unsure, each with
-its ID, and say how long it has waited when that is more than about two weeks.
+pending or where things stand, start with In Progress when there is one: the
+process, where it stopped, what was running, and the steps left in order. Then
+the open items of Next Step and Open Questions, then the unsure ones labelled as
+unsure, each with its ID, saying how long it has waited when that is more than
+about two weeks. Give Backlog as a count ("plus 22 parked in the backlog") and
+list it only if asked.
 Leave closed items out, and mention dormant ones only if asked. When the handoff
 and the evidence disagree, the evidence wins.
 
 ## Step 4 — Enrich, narrowly
 
 Now, and only now, open repo files — and only files **the (reconciled) next step
-names or obviously requires**. Not files that merely sound relevant.
+names or obviously requires** — and when In Progress is filled, the files its
+Stopped at line names. Not files that merely sound relevant.
 
 Ordered by cost, take the cheapest that answers the question:
 
@@ -179,7 +194,9 @@ Loaded <repo> @ <branch> — handoff from <date> (<N days/hours ago>).
 
 Append to that same line only what would make the operator's next question go
 wrong if they did not know it: `— but on <branch>, the handoff was on <other>`,
-or `— with uncommitted changes the handoff doesn't mention`. Nothing else: no
+or `— with uncommitted changes the handoff doesn't mention`, or — when In
+Progress is filled — `— mid-process: T<n>, stopped at <where, in a few words>`,
+since the operator's "what's next" depends on it. Nothing else: no
 state check, no carried-forward list, no next step, no questions, no offer to
 start.
 

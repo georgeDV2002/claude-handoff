@@ -6,6 +6,9 @@ Previous handoff: 2026-03-11T19:02:44Z
 > it back. Only `[open]` items are pending; `[if …]` items are dormant and
 > `[unsure]` items must be shown as unsure, not as pending. Items keep their ID
 > (`T12`) across handoffs; one under Closed Since Last Handoff is finished.
+> If In Progress is filled, the session stopped mid-process: resume from its
+> "Stopped at" line, after checking anything listed as Running. Backlog items
+> are open but parked — give them as a count unless asked.
 > Check `git log --since=<Updated>` for commits newer than this file, then WAIT
 > for the operator before acting. History lives in SESSION_ARCHIVE.md (FLASH
 > sections, newest first) — search it, never read it; nothing there is current.
@@ -70,6 +73,9 @@ comparison only matches once you truncate both sides.
 - T5 (since 2026-03-11) Try Kafka transactions for exactly-once — dropped: the
   sink isn't transactional (see Dead Ends)
 
+## In Progress
+none — the cutover check finished; the backfill has not started.
+
 ## Next Step
 [open] T8 (since 2026-03-14) Run the backfill for 2026-03-01 to 2026-03-13
 against staging, then compare with `compare.sql` one day at a time.
@@ -84,3 +90,7 @@ against staging, then compare with `compare.sql` one day at a time.
 - [unsure] T9 (since 2026-03-14) Whether the DLQ consumer is deployed to
   staging — its deploy was started but never confirmed; `kubectl get deploy
   dlq-consumer -n staging` settles it.
+
+## Backlog
+- [open] T10 (since 2026-03-14) Move the DLQ alert from email to the on-call
+  pager — not needed for the cutover.

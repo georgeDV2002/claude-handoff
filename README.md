@@ -41,6 +41,14 @@ it was dropped. Nothing leaves the list without a line saying why, so the next
 session can tell an item that has waited three weeks from one raised yesterday,
 and one that was finished from one that was forgotten.
 
+A session that stops halfway through something writes an In Progress entry: what
+is done, exactly where it stopped, what is still running and how to check it, and
+the steps left in order. The next step is then resuming it, so the position is not
+traded for an older item on the list. Items that are still open but parked go
+under Backlog, which the next session reports as a count rather than reading out
+in full. An item moves between the two only when someone moves it, never because
+of its age.
+
 It is deliberately short, because a handoff the next session cannot afford to read
 in full is not doing its job, and session history is kept in a separate file for
 that reason.
@@ -52,6 +60,9 @@ or not that session has this skill installed:
 > it back. Only `[open]` items are pending; `[if …]` items are dormant and
 > `[unsure]` items must be shown as unsure, not as pending. Items keep their ID
 > (`T12`) across handoffs; one under Closed Since Last Handoff is finished.
+> If In Progress is filled, the session stopped mid-process: resume from its
+> "Stopped at" line, after checking anything listed as Running. Backlog items
+> are open but parked — give them as a count unless asked.
 > Check `git log --since=<Updated>` for commits newer than this file, then WAIT
 > for the operator before acting.
 
@@ -111,10 +122,10 @@ already forced the issue. Run `/pickup` as the first thing in the next one.
 
 ## What it writes
 
-**`SESSION.md`** — the current session only, in the repository root. Eleven
+**`SESSION.md`** — the current session only, in the repository root. Thirteen
 sections: Bigger Picture, Objective, Git State, Completed This Session, Decisions
 Made, Dead Ends — Do Not Retry, Rescued Artifacts, Context That Would Be Lost,
-Closed Since Last Handoff, Next Step, Open Questions. Pending items carry the
+Closed Since Last Handoff, In Progress, Next Step, Open Questions, Backlog. Pending items carry the
 `[open]` / `[if …]` / `[unsure]` tags, an ID and a since-date, or the sections say
 "Nothing outstanding" and "none" outright.
 
